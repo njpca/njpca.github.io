@@ -16,6 +16,7 @@ require(e1071)
 require(rpart)
 require(randomForest)
 require(gridExtra)
+require(rpart)
 # require(rattle)
 
 ```
@@ -80,6 +81,8 @@ rm(inTrain)
 ###Random Forests
 
 The first attempt uses the Random Forests approach and provides a very accurate model. The training algorithm uses the default settings and predicts the classe (classification variable) using all other variables.
+
+The random forests methodology uses an ensemble approach to attempt to split the data into predictive groups, developing, testing and refining a set of rules on how to classify the data based on certain parameters.
 
 ```{r rftrain}
 
@@ -159,10 +162,14 @@ featurePlot(x=trainingset[,c("roll_belt","pitch_forearm")],
 
 We then test the model on the remaining 15,695 observations in the quiz set, finding an accuracy of 99.26% using the random forests method but only 72% for the rpart classification tree method.
 
-###Confusion Matrices
+###Out of Sample Error and Confusion Matrices
 
-Confusion matrices display a wide range of valuable data on a predictive test, including prediction accuracy, sensitivity, and specificity by class. As seen below, the RF model is highly accurate across all classes when sampled on the quiz set.
+Confusion matrices are a great way to test the out-of-sample error. Also, confusion matrices display a wide range of valuable data on a predictive test, including prediction accuracy, sensitivity, and specificity by class.
 
+Using the quiz set, we can assess the out-of-sample error for the 15,695 observations not included in the initial training.
+
+ As seen below, the RF model is highly accurate across all classes when sampled on the quiz set.
+ 
 ```{r confmatrices}
 
 confusionMatrix(predict(RF20, quiz),quiz$classe)
@@ -176,7 +183,6 @@ In contrast the rpart method has only 72% accuracy and has less than 50% sensiti
 confusionMatrix(predict(RP20, quiz),quiz$classe)
 
 ```
-
 
 ###Visualizing Accuracy Across Metrics
 

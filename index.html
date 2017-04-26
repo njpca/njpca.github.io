@@ -165,6 +165,7 @@ rm(inTrain)</code></pre>
 <div id="random-forests" class="section level3">
 <h3>Random Forests</h3>
 <p>The first attempt uses the Random Forests approach and provides a very accurate model. The training algorithm uses the default settings and predicts the classe (classification variable) using all other variables.</p>
+<p>The random forests methodology uses an ensemble approach to attempt to split the data into predictive groups, developing, testing and refining a set of rules on how to classify the data based on certain parameters.</p>
 <pre class="r"><code># RF20&lt;-train(classe ~ .,
 #               method=&quot;rf&quot;,
 #               data=train)
@@ -262,74 +263,76 @@ RP20&lt;-readRDS(file=&quot;rpart modfit 20.RDS&quot;)</code></pre>
 <div id="testing-the-model" class="section level2">
 <h2>Testing the Model</h2>
 <p>We then test the model on the remaining 15,695 observations in the quiz set, finding an accuracy of 99.26% using the random forests method but only 72% for the rpart classification tree method.</p>
-<div id="confusion-matrices" class="section level3">
-<h3>Confusion Matrices</h3>
-<p>Confusion matrices display a wide range of valuable data on a predictive test, including prediction accuracy, sensitivity, and specificity by class. As seen below, the RF model is highly accurate across all classes when sampled on the quiz set.</p>
+<div id="out-of-sample-error-and-confusion-matrices" class="section level3">
+<h3>Out of Sample Error and Confusion Matrices</h3>
+<p>Confusion matrices are a great way to test the out-of-sample error. Also, confusion matrices display a wide range of valuable data on a predictive test, including prediction accuracy, sensitivity, and specificity by class.</p>
+<p>Using the quiz set, we can assess the out-of-sample error for the 15,695 observations not included in the initial training.</p>
+<p>As seen below, the RF model is highly accurate across all classes when sampled on the quiz set.</p>
 <pre class="r"><code>confusionMatrix(predict(RF20, quiz),quiz$classe)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 4454   12    0    0    0
-##          B   10 3012   20    0    0
-##          C    0   12 2704   17    0
-##          D    0    1   13 2555    5
-##          E    0    0    0    0 2880
+##          A 4453   13    0    0    0
+##          B   11 3013   21    0    0
+##          C    0   11 2704   17    0
+##          D    0    0   12 2555    8
+##          E    0    0    0    0 2877
 ## 
 ## Overall Statistics
-##                                          
-##                Accuracy : 0.9943         
-##                  95% CI : (0.993, 0.9954)
-##     No Information Rate : 0.2844         
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
-##                                          
-##                   Kappa : 0.9927         
-##  Mcnemar's Test P-Value : NA             
+##                                           
+##                Accuracy : 0.9941          
+##                  95% CI : (0.9927, 0.9952)
+##     No Information Rate : 0.2844          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9925          
+##  Mcnemar's Test P-Value : NA              
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9978   0.9918   0.9879   0.9934   0.9983
-## Specificity            0.9989   0.9976   0.9978   0.9986   1.0000
-## Pos Pred Value         0.9973   0.9901   0.9894   0.9926   1.0000
-## Neg Pred Value         0.9991   0.9980   0.9975   0.9987   0.9996
+## Sensitivity            0.9975   0.9921   0.9879   0.9934   0.9972
+## Specificity            0.9988   0.9975   0.9978   0.9985   1.0000
+## Pos Pred Value         0.9971   0.9895   0.9898   0.9922   1.0000
+## Neg Pred Value         0.9990   0.9981   0.9975   0.9987   0.9994
 ## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2838   0.1919   0.1723   0.1628   0.1835
-## Detection Prevalence   0.2845   0.1938   0.1741   0.1640   0.1835
-## Balanced Accuracy      0.9983   0.9947   0.9929   0.9960   0.9991</code></pre>
+## Detection Rate         0.2837   0.1920   0.1723   0.1628   0.1833
+## Detection Prevalence   0.2845   0.1940   0.1741   0.1641   0.1833
+## Balanced Accuracy      0.9982   0.9948   0.9929   0.9959   0.9986</code></pre>
 <p>In contrast the rpart method has only 72% accuracy and has less than 50% sensitivity for Class C.</p>
 <pre class="r"><code>confusionMatrix(predict(RP20, quiz),quiz$classe)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 3780  632  555  361   78
-##          B  275 1893   92   14   16
-##          C  140  426 1348   73  165
-##          D  201   86  724 1992  341
-##          E   68    0   18  132 2285
+##          A 3791  638  556  369   82
+##          B  261 1883  100   13   17
+##          C  142  436 1342   67  156
+##          D  203   80  723 1989  340
+##          E   67    0   16  134 2290
 ## 
 ## Overall Statistics
 ##                                           
-##                Accuracy : 0.7198          
-##                  95% CI : (0.7127, 0.7269)
+##                Accuracy : 0.7197          
+##                  95% CI : (0.7126, 0.7267)
 ##     No Information Rate : 0.2844          
 ##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
 ##                                           
-##                   Kappa : 0.6434          
+##                   Kappa : 0.6431          
 ##  Mcnemar's Test P-Value : &lt; 2.2e-16       
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.8468   0.6233  0.49251   0.7745   0.7920
-## Specificity            0.8552   0.9686  0.93795   0.8970   0.9830
-## Pos Pred Value         0.6992   0.8266  0.62639   0.5957   0.9129
-## Neg Pred Value         0.9335   0.9147  0.89744   0.9530   0.9545
-## Prevalence             0.2844   0.1935  0.17439   0.1639   0.1838
-## Detection Rate         0.2408   0.1206  0.08589   0.1269   0.1456
-## Detection Prevalence   0.3444   0.1459  0.13711   0.2131   0.1595
-## Balanced Accuracy      0.8510   0.7960  0.71523   0.8357   0.8875</code></pre>
+## Sensitivity            0.8492   0.6200   0.4903   0.7733   0.7938
+## Specificity            0.8535   0.9691   0.9382   0.8974   0.9831
+## Pos Pred Value         0.6974   0.8281   0.6262   0.5964   0.9134
+## Neg Pred Value         0.9344   0.9140   0.8971   0.9528   0.9549
+## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
+## Detection Rate         0.2415   0.1200   0.0855   0.1267   0.1459
+## Detection Prevalence   0.3464   0.1449   0.1365   0.2125   0.1597
+## Balanced Accuracy      0.8514   0.7946   0.7143   0.8354   0.8884</code></pre>
 </div>
 <div id="visualizing-accuracy-across-metrics" class="section level3">
 <h3>Visualizing Accuracy Across Metrics</h3>
@@ -389,33 +392,33 @@ RFHardPredicts&lt;-predict(RF20hardmode, newdata=quiz)</code></pre>
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 4439   73    0    1    1
-##          B   15 2931   50   13    8
-##          C    7   27 2668   40   10
-##          D    2    5   19 2512   47
-##          E    1    1    0    6 2819
+##          A 4444   70    0    1    1
+##          B   12 2940   48   11   11
+##          C    5   22 2668   41   10
+##          D    2    4   21 2511   45
+##          E    1    1    0    8 2818
 ## 
 ## Overall Statistics
 ##                                           
-##                Accuracy : 0.9792          
-##                  95% CI : (0.9769, 0.9814)
+##                Accuracy : 0.98            
+##                  95% CI : (0.9777, 0.9821)
 ##     No Information Rate : 0.2844          
 ##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
 ##                                           
-##                   Kappa : 0.9737          
+##                   Kappa : 0.9747          
 ##  Mcnemar's Test P-Value : &lt; 2.2e-16       
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9944   0.9651   0.9748   0.9767   0.9771
-## Specificity            0.9933   0.9932   0.9935   0.9944   0.9994
-## Pos Pred Value         0.9834   0.9715   0.9695   0.9718   0.9972
-## Neg Pred Value         0.9978   0.9916   0.9947   0.9954   0.9949
+## Sensitivity            0.9955   0.9681   0.9748   0.9763   0.9768
+## Specificity            0.9936   0.9935   0.9940   0.9945   0.9992
+## Pos Pred Value         0.9841   0.9729   0.9716   0.9721   0.9965
+## Neg Pred Value         0.9982   0.9923   0.9947   0.9953   0.9948
 ## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2828   0.1867   0.1700   0.1601   0.1796
-## Detection Prevalence   0.2876   0.1922   0.1753   0.1647   0.1801
-## Balanced Accuracy      0.9939   0.9792   0.9842   0.9856   0.9882</code></pre>
+## Detection Rate         0.2831   0.1873   0.1700   0.1600   0.1795
+## Detection Prevalence   0.2877   0.1925   0.1750   0.1646   0.1802
+## Balanced Accuracy      0.9946   0.9808   0.9844   0.9854   0.9880</code></pre>
 <pre class="r"><code>cbind(predict(RF20, testingset),predict(RF20hardmode,testhard))</code></pre>
 <pre><code>##       [,1] [,2]
 ##  [1,]    2    2
