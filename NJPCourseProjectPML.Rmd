@@ -1,0 +1,274 @@
+---
+title: "PML Course Project"
+author: "Nick Pappas"
+date: "4/23/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require(caret)
+require(data.table)
+require(lubridate)
+require(gbm)
+require(e1071)
+require(rpart)
+require(randomForest)
+require(gridExtra)
+# require(rattle)
+
+```
+
+##Project Overview
+
+The project is the final course project for the Practical Machine Learning Course from the Johns Hopkins University Data Specialization on Coursera.
+
+This project explores the use of machine learning to predict correct and incorrect exercise form using measured exercise data collected from various test subjects. The data set is large, including 19,622 observations in the training dataset and 20 additional observations in the test set. Each set includes 160 variables (159 predictors and the classification variable.
+
+Using the random forests methodology and a training class of 20% of the training data, we are able to generate a prediction algorithm whichwith an accuracy of 99.26% when tested on the other 80% of the training set (the quiz set) 58 of the 159 original variables. The prediction algorithm  achieved a 100% success rate on the 20 test observations. Using the alternative rpart methodology results in a much lower accuracy rate.
+
+When attempted subsequently on a data set with sequential variables (timestamp, number, etc) using random forests, the accuracy rate remains high although the prediction model fails to accurately predict all of the final test classifications.
+
+##Data Preparation
+
+###Importing Data
+
+The personal activity training data is located in a .csv file called "pml-training.csv". In this code chunk we load pml-training.csv into a data.frame object called "trainingset". The test data set, containing 20 observations, is called into a variable called "testingset".
+
+```{r dataimport}
+
+trainingset<-data.frame(fread(input = "pml-training.csv",header = T,na.strings = "NA"))
+testingset<-data.frame(fread(input = "pml-testing.csv",header = T,na.strings = "NA"))
+
+```
+
+###Data Cleaning
+
+Many of the variables included in the training data are not included in the test data set. The majority of these variables contain no or close to no data in the test set as well. We will remove those variables as they will not be useful in predicting the test variables, leaving 58 remaining predictor variables and 1 classificatoin variable.
+
+```{r columndrop}
+
+valuablecols<-c(2:11,37:49,60:68,84:86,102,113:124,140,151:160)
+trainingset<-trainingset[,valuablecols]
+testingset<-testingset[,valuablecols]
+rm(valuablecols)
+
+```
+
+##Training The Model
+
+Using the random forests package, we train a predictive model ("modFit") using the training set, which contains 3,927 observations. Due to the long processing time for this segment, the code below calls a model fit previously evaluated using the the commented code instead of evaluating the code in the markdown itself.
+
+###Partitioning Data
+
+Using the createDataPartition function, we next subset the data into a training set and a quiz set from the available data. Due to the large size of the dataset, we limit the training data set to only 20% of the full provided training set and leave the rest of the set available as a quiz set.
+
+```{r datapartition}
+
+inTrain<-createDataPartition(trainingset$classe,
+                             p=.2,
+                             list=FALSE)
+
+train<-trainingset[inTrain,]
+quiz<-trainingset[-inTrain,]
+
+rm(inTrain)
+
+```
+
+###Random Forests
+
+The first attempt uses the Random Forests approach and provides a very accurate model. The training algorithm uses the default settings and predicts the classe (classification variable) using all other variables.
+
+```{r rftrain}
+
+# RF20<-train(classe ~ .,
+#               method="rf",
+#               data=train)
+# 
+# saveRDS(modFitRF50,file = "rf modfit 20.RDS")
+
+RF20<-readRDS(file="rf modfit 20.RDS")
+
+# plot(RF20)
+# RF20
+
+```
+
+###RPart Method
+The second attempt uses the rpart method, which provides a lower degree of accuracy. The training algorithm uses the default settings and predicts the classe (classification variable) using all other variables.
+
+```{r}
+
+# RP20<-train(classe ~ .,
+#               method="rpart",
+#               data=train)
+# View(train)
+# saveRDS(RP20,file = "rpart modfit 20.RDS")
+# 
+RP20<-readRDS(file="rpart modfit 20.RDS")
+
+```
+
+##Visualizing the Trained Models
+
+Using the VarImp function we determine the most significant variables for each training algorithm. First we will consider the Random Forests model by variable imporance.
+
+```{r varImp}
+
+varImp(RF20)
+
+```
+
+Then the RPart by Variable Importance.
+
+```{r}
+
+varImp(RP20)
+
+```
+
+Both training algorithms rely heavily on the raw_timestamp_part_1 variable, a variable representing the time the observation was taken. Random Forests uses num_window, an ordered variable, as well as roll_belt, pitch_forearm, magnet_dumbbell_z, and other observed spatial orientation variables. Rpart uses pitch_forearm, roll_belt, roll_dumbbell, and other variables.
+
+###Assessing variable correlation
+
+First we analyze the correlation between the y variable and the timestamp and numeric variables. Both of these show a cascading pattern compared against the classifier variable, consistent with the reality that the exercise classifications were clumped together and performed sequentially by the test subjects.
+
+```{r featureplots1}
+
+featurePlot(x=trainingset[,c("raw_timestamp_part_1", "num_window")],
+            y=trainingset$classe,
+            plot="pairs")
+
+```
+
+For a more realistic analysis, it is important to disregard these variables, as we will discuss further below. This chart represents the correlation between the classifier variable and two of the top predictor variables aside from the synthetic, time and order variables above. Here we plot roll_belt and pitch_forearm. Both show some significant patterns with the classifier variables.
+
+```{r featureplots2}
+
+featurePlot(x=trainingset[,c("roll_belt","pitch_forearm")],
+            y=trainingset$classe,
+            plot="pairs")
+
+
+```
+
+
+##Testing the Model
+
+We then test the model on the remaining 15,695 observations in the quiz set, finding an accuracy of 99.26% using the random forests method but only 72% for the rpart classification tree method.
+
+###Confusion Matrices
+
+Confusion matrices display a wide range of valuable data on a predictive test, including prediction accuracy, sensitivity, and specificity by class. As seen below, the RF model is highly accurate across all classes when sampled on the quiz set.
+
+```{r confmatrices}
+
+confusionMatrix(predict(RF20, quiz),quiz$classe)
+
+```
+
+In contrast the rpart method has only 72% accuracy and has less than 50% sensitivity for Class C.
+
+```{r}
+
+confusionMatrix(predict(RP20, quiz),quiz$classe)
+
+```
+
+
+###Visualizing Accuracy Across Metrics
+
+These accuracies are visualized below.
+
+```{r qplotVisualization}
+
+accurateRF<-predict(RF20,trainingset)==trainingset$classe
+accurateRP<-predict(RP20,trainingset)==trainingset$classe
+
+RFplot<-
+  qplot(classe,
+      pitch_forearm,
+      data=trainingset,
+      colour=predict(RF20,trainingset),
+      main="RF Model Accuracy: pitch_forearm"
+      )+theme(legend.position = "none")
+
+RPplot<-
+  qplot(classe,
+      pitch_forearm,
+      data=trainingset,
+      colour=predict(RP20,trainingset),
+      main="RP Model Accuracy: pitch_forearm")+
+      theme(legend.position = "none")
+
+grid.arrange(RFplot,RPplot, ncol=2)
+
+```
+
+
+##Hard Mode
+
+Several variables which progressed sequentially with the data were important to the classification tree, including the raw time stamp and the num_window variable. Because the exercise methods were also sequential, this may represent an unfair training and testing advantage for this dataset relative to efforts to classify these behaviors observed outside of an experimental setting. In order to rectify this, we attempt to train and test a new model without the benefit of these sequential variables. This effort will be limited to the more accurate random forests method.
+
+```{r}
+
+trainhard<-trainingset[,-(1:6)]
+testhard<-testingset[,-(1:6)]
+# 
+# inTrain<-createDataPartition(trainhard$classe,
+#                              p=.2,
+#                              list=FALSE)
+# 
+# train<-trainhard[inTrain,]
+# quiz<-trainhard[-inTrain,]
+# 
+# rm(inTrain)
+
+# start<-proc.time()
+# RF20hardmode<-train(classe ~ .,
+#               method="rf",
+#               data=train)
+# end<-proc.time()-start
+
+# saveRDS(RF20hardmode,file = "rf modfit 20 hard.RDS")
+
+RF20hardmode<-readRDS(file = "rf modfit 20 hard.RDS")
+
+RFHardPredicts<-predict(RF20hardmode, newdata=quiz)
+
+```
+
+Notably, the hard mode model is comparable in its accuracy to the model fitted including the timestamp data, coming in at 97.9% accuracy on the quiz set. It also returns the same results as the RF model for the final test set.
+
+```{r}
+
+confusionMatrix(predict(RF20hardmode, quiz),quiz$classe)
+
+cbind(predict(RF20, testingset),predict(RF20hardmode,testhard))
+
+varImp(RF20hardmode)
+
+```
+
+## Final Test Accuracy Across Models
+
+Finally, we benchmark the various models against the testing set accuracy, finding that 
+
+```{r}
+
+correctset<-predict(RF20, testingset)
+RF20set<-predict(RF20, testingset)
+RP20set<-predict(RP20, testingset)
+RF20hardSet<-predict(RF20hardmode, testhard)
+
+Sets<-data.frame(RF20set,RP20set,RF20hardSet,correctset)
+
+knitr::kable(Sets,row.names = 1:20,col.names = c("Random Forests", "RPart", "Random Forests Hard Mode", "Correct"))
+
+paste("Random Forests Test Accuracy: ",  sum(RF20set==correctset)/20*100, "%", sep="")
+paste("RPart Test Accuracy: ",  sum(RP20set==correctset)/20*100, "%", sep="")
+paste("Random Forests Hard Mode Test Accuracy: ",  sum(RF20hardSet==correctset)/20*100,"%", sep="")
+
+```
